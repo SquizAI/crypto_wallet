@@ -97,19 +97,19 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Transaction History</h1>
-          <p className="text-gray-400">View and filter all your transactions</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Transaction History</h1>
+          <p className="text-sm sm:text-base text-gray-400">View and filter all your transactions</p>
         </div>
 
         {/* Filters */}
-        <div className="glass-card rounded-2xl p-6 border border-white/10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="glass-card rounded-2xl p-4 sm:p-6 border border-white/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                 Status
               </label>
               <Dropdown
@@ -120,7 +120,7 @@ export default function TransactionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                 Type
               </label>
               <Dropdown
@@ -132,8 +132,8 @@ export default function TransactionsPage() {
           </div>
 
           {transactions && (
-            <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
-              <span>Total: {transactions.length} transactions</span>
+            <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
+              <span>Total: {transactions.length}</span>
               <span>•</span>
               <span>
                 Pending: {transactions.filter((tx) => tx.status === 'pending').length}
@@ -145,20 +145,20 @@ export default function TransactionsPage() {
         {/* Transactions List */}
         <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
           {isLoading ? (
-            <div className="p-6 space-y-4">
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+              <Skeleton className="h-16 sm:h-20" />
+              <Skeleton className="h-16 sm:h-20" />
+              <Skeleton className="h-16 sm:h-20" />
             </div>
           ) : !transactions || transactions.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-500/20 mb-4">
-                <svg className="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-8 sm:p-12 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-500/20 mb-3 sm:mb-4">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">No Transactions</h3>
-              <p className="text-gray-400">Your transaction history will appear here</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No Transactions</h3>
+              <p className="text-sm sm:text-base text-gray-400">Your transaction history will appear here</p>
             </div>
           ) : (
             <div className="divide-y divide-white/10">
@@ -166,36 +166,43 @@ export default function TransactionsPage() {
                 <div
                   key={tx.hash}
                   className={`
-                    p-6 hover:bg-white/5 transition-colors
+                    p-4 sm:p-6 hover:bg-white/5 active:bg-white/10 transition-colors
                     ${highlightHash === tx.hash ? 'bg-blue-500/10' : ''}
                   `}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                     {/* Left Side */}
                     <div className="flex-1 space-y-2">
                       {/* Type and Token */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         {getTypeBadge(tx.type)}
                         <span className="text-gray-500">•</span>
-                        <span className="text-white font-medium">
+                        <span className="text-sm sm:text-base text-white font-medium">
                           {tx.value} {tx.tokenSymbol}
                         </span>
                       </div>
 
                       {/* Address */}
-                      <div className="flex items-center gap-2 text-sm">
+                      <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                         <span className="text-gray-400">
                           {tx.type === 'send' ? 'To:' : 'From:'}
                         </span>
-                        <span className="text-gray-300 font-mono">
-                          {tx.type === 'send'
-                            ? `${tx.to?.slice(0, 10)}...${tx.to?.slice(-8)}`
-                            : `${tx.from.slice(0, 10)}...${tx.from.slice(-8)}`}
+                        <span className="text-gray-300 font-mono break-all">
+                          <span className="sm:hidden">
+                            {tx.type === 'send'
+                              ? `${tx.to?.slice(0, 8)}...${tx.to?.slice(-6)}`
+                              : `${tx.from.slice(0, 8)}...${tx.from.slice(-6)}`}
+                          </span>
+                          <span className="hidden sm:inline">
+                            {tx.type === 'send'
+                              ? `${tx.to?.slice(0, 10)}...${tx.to?.slice(-8)}`
+                              : `${tx.from.slice(0, 10)}...${tx.from.slice(-8)}`}
+                          </span>
                         </span>
                       </div>
 
                       {/* Transaction Hash */}
-                      <div className="flex items-center gap-2 text-xs">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span className="text-gray-500">Hash:</span>
                         <a
                           href={`https://${
@@ -203,38 +210,38 @@ export default function TransactionsPage() {
                           }etherscan.io/tx/${tx.hash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 font-mono"
+                          className="text-blue-400 hover:text-blue-300 active:text-blue-200 font-mono break-all touch-manipulation"
                         >
-                          {tx.hash.slice(0, 16)}...{tx.hash.slice(-8)}
+                          <span className="sm:hidden">{tx.hash.slice(0, 12)}...{tx.hash.slice(-6)}</span>
+                          <span className="hidden sm:inline">{tx.hash.slice(0, 16)}...{tx.hash.slice(-8)}</span>
                         </a>
                       </div>
                     </div>
 
                     {/* Right Side */}
-                    <div className="text-right space-y-2">
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:space-y-2 sm:text-right">
                       {/* Status */}
                       <div>{getStatusBadge(tx.status)}</div>
 
                       {/* Timestamp */}
-                      <div className="text-sm text-gray-400">
+                      <div className="text-xs sm:text-sm text-gray-400">
                         {formatTimestamp(tx.timestamp)}
                       </div>
 
                       {/* Block Number */}
                       {tx.blockNumber && (
-                        <div className="text-xs text-gray-500">
+                        <div className="hidden sm:block text-xs text-gray-500">
                           Block #{tx.blockNumber}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Gas Used */}
-                  {tx.gasUsed && (
-                    <div className="mt-3 pt-3 border-t border-white/10 text-xs text-gray-500">
-                      Gas Used: {tx.gasUsed}
-                    </div>
-                  )}
+                  {/* Gas Used & Block (Mobile) */}
+                  <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-xs text-gray-500">
+                    {tx.gasUsed && <span>Gas: {tx.gasUsed}</span>}
+                    {tx.blockNumber && <span className="sm:hidden">Block #{tx.blockNumber}</span>}
+                  </div>
                 </div>
               ))}
             </div>

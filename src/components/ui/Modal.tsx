@@ -56,10 +56,10 @@ export interface ModalProps {
 }
 
 const sizeStyles = {
-  sm: 'max-w-md',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
-  xl: 'max-w-4xl',
+  sm: 'w-full sm:max-w-md',
+  md: 'w-full sm:max-w-lg',
+  lg: 'w-full sm:max-w-2xl',
+  xl: 'w-full sm:max-w-4xl',
 };
 
 /**
@@ -113,7 +113,7 @@ export function Modal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -121,20 +121,21 @@ export function Modal({
     >
       <div
         className={`
-          relative w-full ${sizeStyles[size]}
-          glass-strong rounded-2xl shadow-2xl
+          relative ${sizeStyles[size]}
+          glass-strong rounded-t-2xl sm:rounded-2xl shadow-2xl
           animate-slideUp
+          max-h-[95vh] sm:max-h-[90vh]
           ${className}
         `}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-white/10 shrink-0">
             {title && (
               <h2
                 id="modal-title"
-                className="text-2xl font-bold text-white tracking-tight"
+                className="text-xl sm:text-2xl font-bold text-white tracking-tight"
               >
                 {title}
               </h2>
@@ -142,7 +143,7 @@ export function Modal({
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+                className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 active:bg-white/20 touch-manipulation"
                 aria-label="Close modal"
               >
                 <svg
@@ -162,7 +163,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="px-6 py-6">
+        <div className="px-4 sm:px-6 py-4 sm:py-6 overflow-y-auto">
           {children}
         </div>
       </div>
@@ -181,7 +182,7 @@ export function Modal({
  */
 export function ModalFooter({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`flex items-center justify-end gap-3 pt-4 mt-4 border-t border-white/10 ${className}`}>
+    <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 mt-4 border-t border-white/10 ${className}`}>
       {children}
     </div>
   );

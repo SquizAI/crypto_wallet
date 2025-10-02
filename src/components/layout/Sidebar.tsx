@@ -87,8 +87,9 @@ export function Sidebar() {
       {/* Mobile Overlay */}
       {!isCollapsed && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-fadeIn"
           onClick={() => setIsCollapsed(true)}
+          aria-hidden="true"
         />
       )}
 
@@ -99,21 +100,24 @@ export function Sidebar() {
           transition-all duration-300 ease-in-out
           ${isCollapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
           lg:sticky lg:top-0
+          w-64 lg:w-64
         `}
+        role="navigation"
+        aria-label="Main navigation"
       >
         <div
-          className="h-full w-64 glass-strong border-r border-white/10 flex flex-col"
+          className="h-full w-full glass-strong border-r border-white/10 flex flex-col"
           style={{
             backgroundColor: 'rgba(13, 17, 23, 0.95)',
           }}
         >
           {/* Logo & Toggle */}
-          <div className="p-6 border-b border-white/10">
+          <div className="p-4 sm:p-6 border-b border-white/10 shrink-0">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
                   <svg
-                    className="w-6 h-6 text-white"
+                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -126,12 +130,13 @@ export function Sidebar() {
                     />
                   </svg>
                 </div>
-                <h1 className="text-xl font-bold text-white">Wallet</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-white">Wallet</h1>
               </div>
 
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="lg:hidden text-gray-400 hover:text-white transition-colors"
+                className="lg:hidden text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 active:bg-white/20 touch-manipulation"
+                aria-label="Close menu"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -141,9 +146,9 @@ export function Sidebar() {
 
             {/* Wallet Address */}
             {address && (
-              <div className="mt-4 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+              <div className="mt-3 sm:mt-4 px-2 sm:px-3 py-2 rounded-lg bg-white/5 border border-white/10">
                 <p className="text-xs text-gray-400 mb-1">Wallet Address</p>
-                <p className="text-sm font-mono text-white truncate">
+                <p className="text-xs sm:text-sm font-mono text-white truncate">
                   {address.slice(0, 6)}...{address.slice(-4)}
                 </p>
               </div>
@@ -151,7 +156,7 @@ export function Sidebar() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 p-3 sm:p-4 space-y-1 overflow-y-auto custom-scrollbar">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const isDisabled = item.requiresUnlock && !isUnlocked;
@@ -168,19 +173,20 @@ export function Sidebar() {
                     }
                   }}
                   className={`
-                    flex items-center gap-3 px-4 py-3 rounded-xl
+                    flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-xl
                     transition-all duration-300
+                    touch-manipulation
                     ${
                       isActive
                         ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-white border border-blue-500/50 shadow-lg shadow-blue-500/20'
                         : isDisabled
                         ? 'text-gray-600 cursor-not-allowed'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5 active:bg-white/10'
                     }
                   `}
                 >
                   <div className={isActive ? 'text-blue-400' : ''}>{item.icon}</div>
-                  <span className="font-medium">{item.label}</span>
+                  <span className="text-sm sm:text-base font-medium">{item.label}</span>
                   {isDisabled && (
                     <svg className="w-4 h-4 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -193,15 +199,15 @@ export function Sidebar() {
 
           {/* Lock Wallet Button */}
           {isUnlocked && (
-            <div className="p-4 border-t border-white/10">
+            <div className="p-3 sm:p-4 border-t border-white/10 shrink-0">
               <button
                 onClick={handleLockWallet}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
+                className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 active:bg-red-500/20 transition-all duration-300 touch-manipulation"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <span className="font-medium">Lock Wallet</span>
+                <span className="text-sm sm:text-base font-medium">Lock Wallet</span>
               </button>
             </div>
           )}
@@ -213,10 +219,13 @@ export function Sidebar() {
         onClick={() => setIsCollapsed(false)}
         className={`
           fixed top-4 left-4 z-30 lg:hidden
-          p-3 rounded-xl glass-strong border border-white/10
+          p-2.5 sm:p-3 rounded-xl glass-strong border border-white/10
           text-white transition-all duration-300
+          touch-manipulation
+          shadow-lg
           ${isCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `}
+        aria-label="Open menu"
       >
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
