@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="url(#grad1)" opacity="0.1"/>
+
+  <!-- Wallet icon -->
+  <path d="M64 80C64 71.1634 71.1634 64 80 64H176C184.837 64 192 71.1634 192 80V96H64V80Z" fill="url(#grad1)"/>
+  <path d="M64 96H192V176C192 184.837 184.837 192 176 192H80C71.1634 192 64 184.837 64 176V96Z" fill="url(#grad1)" opacity="0.8"/>
+
+  <!-- Dollar sign -->
+  <path d="M128 110V146M118 128H138M138 128C138 131.314 135.314 134 132 134H124C120.686 134 118 131.314 118 128C118 124.686 120.686 122 124 122H132C135.314 122 138 124.686 138 128Z"
+        stroke="#0d1117" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
