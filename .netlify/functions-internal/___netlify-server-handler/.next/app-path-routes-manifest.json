@@ -1,0 +1,20 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/address-book/page": "/address-book",
+  "/alerts/page": "/alerts",
+  "/analytics/page": "/analytics",
+  "/component-showcase/page": "/component-showcase",
+  "/dashboard/page": "/dashboard",
+  "/favicon.ico/route": "/favicon.ico",
+  "/onboarding/page": "/onboarding",
+  "/page": "/",
+  "/qr-demo/page": "/qr-demo",
+  "/receive/page": "/receive",
+  "/send/page": "/send",
+  "/settings/page": "/settings",
+  "/swap/page": "/swap",
+  "/test-wallet/page": "/test-wallet",
+  "/transactions/page": "/transactions",
+  "/unlock/page": "/unlock",
+  "/wallets/page": "/wallets"
+}

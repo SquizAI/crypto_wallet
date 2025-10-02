@@ -1,0 +1,20 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/address-book/page": "app/address-book/page.js",
+  "/alerts/page": "app/alerts/page.js",
+  "/analytics/page": "app/analytics/page.js",
+  "/component-showcase/page": "app/component-showcase/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/onboarding/page": "app/onboarding/page.js",
+  "/page": "app/page.js",
+  "/qr-demo/page": "app/qr-demo/page.js",
+  "/receive/page": "app/receive/page.js",
+  "/send/page": "app/send/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/swap/page": "app/swap/page.js",
+  "/test-wallet/page": "app/test-wallet/page.js",
+  "/transactions/page": "app/transactions/page.js",
+  "/unlock/page": "app/unlock/page.js",
+  "/wallets/page": "app/wallets/page.js"
+}

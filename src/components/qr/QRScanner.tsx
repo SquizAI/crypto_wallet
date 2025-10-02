@@ -111,6 +111,13 @@ export function QRScanner({
         setState('initializing');
         setError(null);
 
+        // Wait for DOM element to be available
+        const element = document.getElementById(qrRegionId);
+        if (!element) {
+          console.error('QR reader element not found');
+          return;
+        }
+
         // Create scanner instance
         const scanner = new Html5Qrcode(qrRegionId, {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -171,7 +178,7 @@ export function QRScanner({
     };
 
     // Delay initialization to ensure DOM is ready
-    const timer = setTimeout(initScanner, 100);
+    const timer = setTimeout(initScanner, 300);
 
     return () => {
       clearTimeout(timer);

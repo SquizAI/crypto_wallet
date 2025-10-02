@@ -1,0 +1,149 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/address-book",
+      "regex": "^/address\\-book(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/address\\-book(?:/)?$"
+    },
+    {
+      "page": "/alerts",
+      "regex": "^/alerts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/alerts(?:/)?$"
+    },
+    {
+      "page": "/analytics",
+      "regex": "^/analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/analytics(?:/)?$"
+    },
+    {
+      "page": "/component-showcase",
+      "regex": "^/component\\-showcase(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/component\\-showcase(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/onboarding",
+      "regex": "^/onboarding(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/onboarding(?:/)?$"
+    },
+    {
+      "page": "/qr-demo",
+      "regex": "^/qr\\-demo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/qr\\-demo(?:/)?$"
+    },
+    {
+      "page": "/receive",
+      "regex": "^/receive(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/receive(?:/)?$"
+    },
+    {
+      "page": "/send",
+      "regex": "^/send(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/send(?:/)?$"
+    },
+    {
+      "page": "/settings",
+      "regex": "^/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/settings(?:/)?$"
+    },
+    {
+      "page": "/swap",
+      "regex": "^/swap(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/swap(?:/)?$"
+    },
+    {
+      "page": "/test-wallet",
+      "regex": "^/test\\-wallet(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/test\\-wallet(?:/)?$"
+    },
+    {
+      "page": "/transactions",
+      "regex": "^/transactions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/transactions(?:/)?$"
+    },
+    {
+      "page": "/unlock",
+      "regex": "^/unlock(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/unlock(?:/)?$"
+    },
+    {
+      "page": "/wallets",
+      "regex": "^/wallets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/wallets(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments"
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

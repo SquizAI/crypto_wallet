@@ -43,7 +43,7 @@ export const NETWORKS: Record<NetworkId, Network> = {
     chainId: ChainId.POLYGON,
     name: 'Polygon',
     shortName: 'MATIC',
-    rpcUrl: process.env.NEXT_PUBLIC_POLYGON_RPC_URL || 'https://polygon-rpc.com',
+    rpcUrl: process.env.NEXT_PUBLIC_POLYGON_RPC_URL || 'https://polygon.llamarpc.com',
     nativeCurrency: {
       name: 'MATIC',
       symbol: 'MATIC',
