@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Storage Diagnostic</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #fff;
+    }
+    .result {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border: 1px solid #333;
+    }
+    .success {
+      border-color: #22c55e;
+      background: #0a2f1a;
+    }
+    .error {
+      border-color: #ef4444;
+      background: #2f0a0a;
+    }
+    .info {
+      border-color: #3b82f6;
+      background: #0a1a2f;
+    }
+    h1 {
+      color: #3b82f6;
+    }
+    code {
+      background: #2a2a2a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+    pre {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Wallet Storage Diagnostic</h1>
+  <p>This diagnostic tool checks if a wallet exists in your browser's localStorage.</p>
+
+  <div id="results"></div>
+
+  <script>
+    const resultsDiv = document.getElementById('results');
+
+    function showResult(type, title, content) {
+      const div = document.createElement('div');
+      div.className = `result ${type}`;
+      div.innerHTML = `<h2>${title}</h2>${content}`;
+      resultsDiv.appendChild(div);
+    }
+
+    // Check localStorage availability
+    function isLocalStorageAvailable() {
+      try {
+        const testKey = '__storage_test__';
+        localStorage.setItem(testKey, 'test');
+        localStorage.removeItem(testKey);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    // Run diagnostics
+    function runDiagnostic() {
+      resultsDiv.innerHTML = '';
+
+      // Check localStorage availability
+      if (!isLocalStorageAvailable()) {
+        showResult('error', '❌ LocalStorage Not Available',
+          '<p>Your browser is blocking localStorage access. This could be due to:</p>' +
+          '<ul>' +
+          '<li>Private/Incognito mode</li>' +
+          '<li>Browser privacy settings</li>' +
+          '<li>Security extensions</li>' +
+          '</ul>'
+        );
+        return;
+      }
+
+      showResult('success', '✅ LocalStorage Available', '<p>Your browser supports localStorage.</p>');
+
+      // Check for wallet data
+      const walletData = localStorage.getItem('stablecoin_wallet_data');
+      const multiWalletData = localStorage.getItem('stablecoin_multi_wallet_data');
+
+      if (!walletData && !multiWalletData) {
+        showResult('info', '📭 No Wallet Found',
+          '<p><strong>No wallet exists in this browser.</strong></p>' +
+          '<p>This means:</p>' +
+          '<ul>' +
+          '<li>You haven\'t created a wallet on this browser yet, OR</li>' +
+          '<li>You\'re on a different browser/device than where you created the wallet, OR</li>' +
+          '<li>Your browser data was cleared</li>' +
+          '</ul>' +
+          '<p><strong>What to do:</strong></p>' +
+          '<ul>' +
+          '<li>If you have a recovery phrase: Import your wallet</li>' +
+          '<li>If you don\'t have a recovery phrase: Create a new wallet</li>' +
+          '</ul>'
+        );
+
+        // Show all wallet-related keys
+        const allKeys = Object.keys(localStorage).filter(k => k.includes('wallet') || k.includes('stablecoin'));
+        if (allKeys.length > 0) {
+          showResult('info', '🔑 Found Related Keys',
+            `<p>Found ${allKeys.length} wallet-related storage key(s):</p>` +
+            `<pre>${allKeys.join('\n')}</pre>`
+          );
+        }
+
+        return;
+      }
+
+      // Wallet exists - show details
+      if (walletData) {
+        try {
+          const wallet = JSON.parse(walletData);
+          showResult('success', '✅ Wallet Found!',
+            '<p><strong>A wallet exists in this browser.</strong></p>' +
+            '<p><strong>Address:</strong> <code>' + wallet.address + '</code></p>' +
+            '<p><strong>Type:</strong> ' + (wallet.type === 'hd' ? 'HD Wallet (with recovery phrase)' : 'Imported Wallet') + '</p>' +
+            '<p><strong>What to do:</strong></p>' +
+            '<ul>' +
+            '<li>Go to the main site</li>' +
+            '<li>Enter your password to unlock the wallet</li>' +
+            '</ul>'
+          );
+        } catch (error) {
+          showResult('error', '⚠️ Corrupted Wallet Data',
+            '<p>Wallet data exists but is corrupted.</p>' +
+            '<p><strong>You may need to:</strong></p>' +
+            '<ul>' +
+            '<li>Clear browser data and import your wallet with your recovery phrase</li>' +
+            '<li>Or create a new wallet</li>' +
+            '</ul>'
+          );
+        }
+      }
+
+      if (multiWalletData) {
+        try {
+          const multiWallet = JSON.parse(multiWalletData);
+          const walletCount = Object.keys(multiWallet.wallets || {}).length;
+          showResult('success', '✅ Multi-Wallet Found!',
+            '<p><strong>' + walletCount + ' wallet(s) stored.</strong></p>' +
+            '<p><strong>Active Wallet ID:</strong> <code>' + (multiWallet.activeWalletId || 'None') + '</code></p>'
+          );
+        } catch (error) {
+          showResult('error', '⚠️ Corrupted Multi-Wallet Data',
+            '<p>Multi-wallet data exists but is corrupted.</p>'
+          );
+        }
+      }
+
+      // Show all storage keys
+      const allKeys = Object.keys(localStorage);
+      showResult('info', '📦 All LocalStorage Keys (' + allKeys.length + ' total)',
+        '<pre>' + allKeys.join('\n') + '</pre>' +
+        '<button onclick="copyKeys()">Copy Keys to Clipboard</button>'
+      );
+    }
+
+    function copyKeys() {
+      const keys = Object.keys(localStorage).join('\n');
+      navigator.clipboard.writeText(keys).then(() => {
+        alert('Keys copied to clipboard!');
+      });
+    }
+
+    // Run on load
+    runDiagnostic();
+  </script>
+</body>
+</html>

@@ -25,16 +25,16 @@ export default function OnboardingPage() {
 
   if (!showOnboarding) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="glass-strong rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-white/10">
+          <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}
               stroke="currentColor"
-              className="w-8 h-8 text-green-600"
+              className="w-8 h-8 text-green-400"
             >
               <path
                 strokeLinecap="round"
@@ -43,10 +43,10 @@ export default function OnboardingPage() {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-white mb-2">
             Wallet Setup Complete!
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-300 mb-6">
             Your wallet has been created successfully. You can now start using the app.
           </p>
           <button

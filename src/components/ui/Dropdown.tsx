@@ -72,7 +72,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(
         {label && (
           <label
             htmlFor={dropdownId}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-300 mb-1"
           >
             {label}
           </label>
@@ -84,15 +84,15 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(
           className={`
             w-full px-4 py-2
             border rounded-lg
-            bg-white
+            glass text-white
             transition-colors duration-200
-            focus:outline-none focus:ring-2 focus:ring-offset-1
-            disabled:bg-gray-100 disabled:cursor-not-allowed
+            focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-900
+            disabled:opacity-50 disabled:cursor-not-allowed
             appearance-none
             ${
               error
                 ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                : 'border-white/20 focus:ring-blue-400 focus:border-blue-400'
             }
             ${className}
           `}
