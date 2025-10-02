@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
 import { exportPrivateKey, exportMnemonic, deleteWallet, getWalletType } from '@/services';
@@ -18,15 +18,26 @@ import { env } from '@/lib/env';
 
 type SettingsModal = 'export-key' | 'export-mnemonic' | 'delete-wallet' | null;
 
+export const dynamic = 'force-dynamic';
+
 export default function SettingsPage() {
   const router = useRouter();
   const { address, lock } = useWallet();
+  const [mounted, setMounted] = useState(false);
 
   const [activeModal, setActiveModal] = useState<SettingsModal>(null);
   const [password, setPassword] = useState('');
   const [exportedData, setExportedData] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   const walletType = getWalletType();
   const isHDWallet = walletType === 'hd';

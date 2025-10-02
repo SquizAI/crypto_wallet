@@ -19,7 +19,6 @@ export {
   updateTransaction,
   hasWallet as storageHasWallet,
   clearAllData,
-  StorageError,
 } from './storageService';
 
 // Wallet Service
@@ -46,7 +45,6 @@ export {
   sendToken,
   estimateTransferGas,
   getGasPrice,
-  ContractError,
 } from './contractService';
 
 // Transaction Service
@@ -63,7 +61,6 @@ export {
   recheckPendingTransactions,
   createTransactionRecord,
   cleanupAllMonitors,
-  TransactionError,
 } from './transactionService';
 
 // Types

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
 import { useBalance } from '@/hooks/useBalance';
@@ -14,11 +14,18 @@ import { ReceiveModal } from '@/components/modals/ReceiveModal';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { TOKENS } from '@/constants/tokens';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   const router = useRouter();
   const { address, isUnlocked, hasExistingWallet } = useWallet();
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch all token balances
   const { data: balances, isLoading: balancesLoading } = useBalance();
@@ -27,6 +34,11 @@ export default function Home() {
   const { data: transactions, isLoading: transactionsLoading } = useTransactionHistory({
     limit: 5,
   });
+
+  // Show loading state during SSR/hydration
+  if (!mounted) {
+    return null;
+  }
 
   // Show landing page if no wallet or not unlocked
   if (!isUnlocked || !address) {

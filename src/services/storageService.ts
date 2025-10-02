@@ -42,6 +42,10 @@ export class StorageError extends Error {
  * @returns true if localStorage is available
  */
 function isLocalStorageAvailable(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
   try {
     const testKey = '__storage_test__';
     localStorage.setItem(testKey, 'test');
@@ -145,6 +149,11 @@ export function setWallet(data: WalletData): void {
  */
 export function getWallet(): WalletData | null {
   try {
+    // Return null during SSR
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
     // Check localStorage availability
     if (!isLocalStorageAvailable()) {
       throw new StorageError(
@@ -274,6 +283,11 @@ export function setTransactionHistory(transactions: Transaction[]): void {
  */
 export function getTransactionHistory(): Transaction[] {
   try {
+    // Return empty array during SSR
+    if (typeof window === 'undefined') {
+      return [];
+    }
+
     // Check localStorage availability
     if (!isLocalStorageAvailable()) {
       throw new StorageError(
@@ -391,6 +405,11 @@ export function updateTransaction(
  * @returns true if a wallet exists
  */
 export function hasWallet(): boolean {
+  // Return false during SSR
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
   try {
     const wallet = getWallet();
     return wallet !== null;

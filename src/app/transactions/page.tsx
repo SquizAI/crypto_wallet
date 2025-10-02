@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -14,7 +14,9 @@ import { Dropdown } from '@/components/ui/Dropdown';
 import { Badge } from '@/components/ui/Badge';
 import type { TransactionStatus, TransactionType } from '@/types/wallet';
 
-export default function TransactionsPage() {
+export const dynamic = 'force-dynamic';
+
+function TransactionsContent() {
   const searchParams = useSearchParams();
   const highlightHash = searchParams.get('hash');
 
@@ -249,5 +251,13 @@ export default function TransactionsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="p-6"><Skeleton className="h-96" /></div>}>
+      <TransactionsContent />
+    </Suspense>
   );
 }

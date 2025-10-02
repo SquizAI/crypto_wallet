@@ -156,7 +156,7 @@ async function deriveKey(keyMaterial: CryptoKey, salt: Uint8Array): Promise<Cryp
   return await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: salt,
+      salt: salt.buffer as ArrayBuffer,
       iterations: 100000, // 100,000 iterations for strong key derivation
       hash: 'SHA-256',
     },
