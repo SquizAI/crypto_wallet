@@ -28,14 +28,14 @@ export function LayoutContent({ children }: LayoutContentProps) {
 
   // Routing logic
   useEffect(() => {
-    // Skip routing on auth pages
-    if (isAuthRoute) return;
+    // Skip routing on auth pages or landing page
+    if (isAuthRoute || pathname === '/') return;
 
     const walletExists = hasExistingWallet();
 
-    // No wallet exists -> redirect to onboarding
-    if (!walletExists && pathname !== '/onboarding') {
-      router.push('/onboarding');
+    // No wallet exists -> redirect to home/landing
+    if (!walletExists) {
+      router.push('/');
       return;
     }
 
