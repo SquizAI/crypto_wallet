@@ -203,7 +203,7 @@ function LandingPage({ hasWallet }: { hasWallet: boolean }) {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 animate-fade-in-delay px-4">
               <button
-                onClick={() => router.push('/onboarding')}
+                onClick={() => router.push(hasWallet ? '/unlock' : '/onboarding')}
                 className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/50 active:scale-95"
               >
                 {hasWallet ? 'Unlock Wallet' : 'Create Wallet'}
