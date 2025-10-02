@@ -2,12 +2,14 @@
  * Contract Service
  *
  * ERC20 token interaction service using ethers.js v6
+ * Now with multi-network support
  *
  * Features:
  * - Token balance queries for USDC, USDT, DAI
  * - ERC20 token transfers
  * - Gas estimation with fallbacks
  * - Network gas price fetching
+ * - Multi-network support
  * - Comprehensive error handling
  *
  * Security Notes:
@@ -17,10 +19,11 @@
  * - Transaction details are returned for user verification
  */
 
-import { Contract, JsonRpcProvider, formatUnits, parseUnits, Wallet, isAddress, type ContractTransactionResponse } from 'ethers';
-import { env } from '@/lib/env';
-import { TOKENS, getTokenAddress, getTokensForNetwork, type TokenSymbol } from '@/constants/tokens';
-import type { TokenBalance, GasEstimate, ContractError } from '@/types/contract';
+import { Contract, formatUnits, parseUnits, Wallet, isAddress, type ContractTransactionResponse } from 'ethers';
+import { getProvider, getNetworkGasPrice } from '@/services/networkService';
+import { getTokenAddress, getNetworkTokens } from '@/config/networks';
+import type { NetworkId } from '@/types/network';
+import type { TokenBalance, GasEstimate } from '@/types/contract';
 import { ContractError as ContractErrorClass } from '@/types/contract';
 
 /**
@@ -35,21 +38,6 @@ const ERC20_ABI = [
   'function allowance(address owner, address spender) view returns (uint256)',
   'function approve(address spender, uint256 amount) returns (bool)',
 ];
-
-/**
- * JSON-RPC provider instance (singleton)
- */
-let providerInstance: JsonRpcProvider | null = null;
-
-/**
- * Get or create provider instance
- */
-function getProvider(): JsonRpcProvider {
-  if (!providerInstance) {
-    providerInstance = new JsonRpcProvider(env.NEXT_PUBLIC_RPC_URL);
-  }
-  return providerInstance;
-}
 
 /**
  * Validate Ethereum address format
@@ -114,19 +102,21 @@ async function withRetry<T>(
  *
  * @param tokenAddress - ERC20 token contract address
  * @param userAddress - User's wallet address
+ * @param networkId - Network to query (required for multi-network support)
  * @returns Token balance details
  * @throws ContractError on validation or network errors
  */
 export async function getTokenBalance(
   tokenAddress: string,
-  userAddress: string
+  userAddress: string,
+  networkId: NetworkId
 ): Promise<TokenBalance> {
   validateAddress(tokenAddress);
   validateAddress(userAddress);
 
   return withRetry(async () => {
     try {
-      const provider = getProvider();
+      const provider = getProvider(networkId);
       const contract = new Contract(tokenAddress, ERC20_ABI, provider);
 
       // Fetch token details and balance in parallel
@@ -159,70 +149,54 @@ export async function getTokenBalance(
 }
 
 /**
- * Get balances for all supported tokens on the current network
+ * Get balances for all supported tokens on a specific network
  *
  * @param userAddress - User's wallet address
+ * @param networkId - Network to query
  * @returns Array of token balances
  * @throws ContractError on validation or network errors
  */
-export async function getAllBalances(userAddress: string): Promise<TokenBalance[]> {
+export async function getAllBalances(userAddress: string, networkId: NetworkId): Promise<TokenBalance[]> {
   validateAddress(userAddress);
 
-  const network = env.NEXT_PUBLIC_NETWORK;
-  const supportedTokens = getTokensForNetwork(network);
+  const supportedTokens = getNetworkTokens(networkId);
 
   // Fetch all balances in parallel
-  const balancePromises = supportedTokens
-    .map(token => {
-      const address = getTokenAddress(token.symbol as TokenSymbol, network);
-      if (!address) return null;
-
-      return getTokenBalance(address, userAddress).catch(error => {
-        console.error(`Failed to fetch balance for ${token.symbol}:`, error);
-        // Return zero balance on error instead of failing completely
-        return {
-          tokenAddress: address,
-          symbol: token.symbol,
-          name: token.name,
-          decimals: token.decimals,
-          balanceRaw: '0',
-          balanceFormatted: '0.0',
-        } as TokenBalance;
-      });
-    })
-    .filter((promise): promise is Promise<TokenBalance> => promise !== null);
+  const balancePromises = supportedTokens.map(({ symbol, address }) => {
+    return getTokenBalance(address, userAddress, networkId).catch(error => {
+      console.error(`Failed to fetch balance for ${symbol} on ${networkId}:`, error);
+      // Return zero balance on error instead of failing completely
+      return {
+        tokenAddress: address,
+        symbol: symbol,
+        name: symbol, // Fallback to symbol if name fetch fails
+        decimals: symbol === 'DAI' ? 18 : 6, // Common decimals for stablecoins
+        balanceRaw: '0',
+        balanceFormatted: '0.0',
+      } as TokenBalance;
+    });
+  });
 
   return Promise.all(balancePromises);
 }
 
 /**
- * Get current gas price from the network
+ * Get current gas price from a specific network
  *
+ * @param networkId - Network to query
  * @returns Gas price details (EIP-1559 format)
  * @throws ContractError on network errors
  */
-export async function getGasPrice(): Promise<{
+export async function getGasPrice(networkId: NetworkId): Promise<{
   maxFeePerGas: bigint;
   maxPriorityFeePerGas: bigint;
 }> {
   return withRetry(async () => {
     try {
-      const provider = getProvider();
-      const feeData = await provider.getFeeData();
-
-      // Use EIP-1559 if available, otherwise fall back to legacy gas price
-      if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
-        return {
-          maxFeePerGas: feeData.maxFeePerGas,
-          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-        };
-      }
-
-      // Fallback to legacy gas price
-      const gasPrice = feeData.gasPrice || parseUnits('50', 'gwei');
+      const gasPrice = await getNetworkGasPrice(networkId);
       return {
-        maxFeePerGas: gasPrice,
-        maxPriorityFeePerGas: parseUnits('2', 'gwei'),
+        maxFeePerGas: gasPrice.maxFeePerGas,
+        maxPriorityFeePerGas: gasPrice.maxPriorityFeePerGas,
       };
     } catch (error) {
       throw new ContractErrorClass(
@@ -242,6 +216,7 @@ export async function getGasPrice(): Promise<{
  * @param to - Recipient address
  * @param amount - Amount to transfer (in token units, e.g., "10.5")
  * @param decimals - Token decimals
+ * @param networkId - Network to use for estimation
  * @returns Gas estimation details
  * @throws ContractError on validation or estimation errors
  */
@@ -250,7 +225,8 @@ export async function estimateTransferGas(
   from: string,
   to: string,
   amount: string,
-  decimals: number
+  decimals: number,
+  networkId: NetworkId
 ): Promise<GasEstimate> {
   validateAddress(tokenAddress);
   validateAddress(from);
@@ -258,14 +234,14 @@ export async function estimateTransferGas(
 
   return withRetry(async () => {
     try {
-      const provider = getProvider();
+      const provider = getProvider(networkId);
       const contract = new Contract(tokenAddress, ERC20_ABI, provider);
 
       // Parse amount to wei
       const parsedAmount = parseUnits(amount, decimals);
 
       // Get gas price
-      const gasPrice = await getGasPrice();
+      const gasPrice = await getGasPrice(networkId);
 
       // Estimate gas limit
       let gasLimit: bigint;
@@ -309,6 +285,7 @@ export async function estimateTransferGas(
  * @param recipient - Recipient address
  * @param amount - Amount to transfer (in token units, e.g., "10.5")
  * @param decimals - Token decimals
+ * @param networkId - Network to send transaction on
  * @returns Transaction response from ethers
  * @throws ContractError on validation, insufficient balance, or transaction errors
  *
@@ -320,14 +297,15 @@ export async function sendToken(
   tokenAddress: string,
   recipient: string,
   amount: string,
-  decimals: number
+  decimals: number,
+  networkId: NetworkId
 ) {
   validateAddress(tokenAddress);
   validateAddress(recipient);
 
   return withRetry(async () => {
     try {
-      const provider = getProvider();
+      const provider = getProvider(networkId);
       const contract = new Contract(tokenAddress, ERC20_ABI, provider);
       const connectedContract = contract.connect(wallet);
 
@@ -349,14 +327,15 @@ export async function sendToken(
         wallet.address,
         recipient,
         amount,
-        decimals
+        decimals,
+        networkId
       );
 
       // Check ETH balance for gas
       const ethBalance = await provider.getBalance(wallet.address);
       if (ethBalance < gasEstimate.estimatedCost) {
         throw new ContractErrorClass(
-          `Insufficient ETH for gas. Required: ${gasEstimate.estimatedCostFormatted} ETH`,
+          `Insufficient native currency for gas. Required: ${gasEstimate.estimatedCostFormatted}`,
           'INSUFFICIENT_GAS'
         );
       }
@@ -387,10 +366,11 @@ export async function sendToken(
  * Get token info for a given address
  *
  * @param tokenAddress - ERC20 token contract address
+ * @param networkId - Network to query
  * @returns Token details (name, symbol, decimals)
  * @throws ContractError on validation or network errors
  */
-export async function getTokenInfo(tokenAddress: string): Promise<{
+export async function getTokenInfo(tokenAddress: string, networkId: NetworkId): Promise<{
   name: string;
   symbol: string;
   decimals: number;
@@ -399,7 +379,7 @@ export async function getTokenInfo(tokenAddress: string): Promise<{
 
   return withRetry(async () => {
     try {
-      const provider = getProvider();
+      const provider = getProvider(networkId);
       const contract = new Contract(tokenAddress, ERC20_ABI, provider);
 
       const [name, symbol, decimals] = await Promise.all([

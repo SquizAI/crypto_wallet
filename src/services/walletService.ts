@@ -596,3 +596,227 @@ export async function exportMnemonic(password: string): Promise<string | null> {
   const unlocked = await unlockWallet(password);
   return unlocked.mnemonic;
 }
+
+/**
+ * Export wallet backup file format
+ */
+interface WalletBackupFile {
+  /**
+   * File format version for future compatibility
+   */
+  version: string;
+
+  /**
+   * Encrypted wallet data
+   */
+  wallet: WalletData;
+
+  /**
+   * Export timestamp
+   */
+  exportedAt: string;
+
+  /**
+   * File identifier
+   */
+  type: 'stablecoin-wallet-backup';
+}
+
+/**
+ * Export wallet as encrypted JSON file
+ *
+ * Creates a downloadable backup file containing the encrypted wallet data.
+ * The file includes all encrypted data and metadata needed to restore the wallet.
+ *
+ * @param password - User password (for verification)
+ * @returns Blob containing the wallet backup file
+ * @throws WalletError if export fails
+ *
+ * Security Notes:
+ * - File contains encrypted data only (no plaintext secrets)
+ * - Password is verified before export
+ * - File should be stored securely by user
+ * - File can be used to restore wallet on any device
+ *
+ * @example
+ * ```typescript
+ * const blob = await exportWalletToFile('myPassword123');
+ * const url = URL.createObjectURL(blob);
+ * const a = document.createElement('a');
+ * a.href = url;
+ * a.download = `stablecoin-wallet-backup-${Date.now()}.json`;
+ * a.click();
+ * ```
+ */
+export async function exportWalletToFile(password: string): Promise<Blob> {
+  try {
+    // Verify password first
+    await verifyPassword(password);
+
+    // Get wallet data
+    const walletData = getWallet();
+    if (!walletData) {
+      throw new WalletError(
+        'No wallet found to export',
+        'NO_WALLET'
+      );
+    }
+
+    // Create backup file structure
+    const backupFile: WalletBackupFile = {
+      version: '1.0.0',
+      wallet: walletData,
+      exportedAt: new Date().toISOString(),
+      type: 'stablecoin-wallet-backup',
+    };
+
+    // Convert to JSON
+    const json = JSON.stringify(backupFile, null, 2);
+
+    // Create blob
+    const blob = new Blob([json], { type: 'application/json' });
+
+    // Mark wallet as backed up in backup tracking
+    // Import dynamically to avoid circular dependency
+    if (typeof window !== 'undefined') {
+      import('@/services/backupService').then(({ markWalletBackedUp }) => {
+        markWalletBackedUp();
+      }).catch((err) => {
+        console.error('Failed to update backup status:', err);
+      });
+    }
+
+    return blob;
+  } catch (error) {
+    if (error instanceof WalletError) {
+      throw error;
+    }
+
+    throw new WalletError(
+      `Failed to export wallet: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'UNKNOWN'
+    );
+  }
+}
+
+/**
+ * Import wallet from backup file
+ *
+ * Restores a wallet from a previously exported backup file.
+ * Validates file format and imports the encrypted wallet data.
+ *
+ * @param file - Wallet backup file (JSON)
+ * @param password - Password to verify wallet decryption
+ * @returns Wallet address
+ * @throws WalletError if import fails
+ *
+ * Security Notes:
+ * - Validates file format before import
+ * - Verifies password can decrypt wallet data
+ * - Prevents import if wallet already exists
+ * - Validates wallet data integrity
+ *
+ * @example
+ * ```typescript
+ * const address = await importWalletFromFile(file, 'myPassword123');
+ * console.log('Wallet imported:', address);
+ * ```
+ */
+export async function importWalletFromFile(
+  file: File,
+  password: string
+): Promise<string> {
+  try {
+    // Validate password format
+    validatePassword(password);
+
+    // Check if wallet already exists
+    if (hasWallet()) {
+      throw new WalletError(
+        'Wallet already exists. Delete existing wallet before importing.',
+        'WALLET_EXISTS'
+      );
+    }
+
+    // Read file content
+    const content = await file.text();
+
+    // Parse JSON
+    let backupFile: WalletBackupFile;
+    try {
+      backupFile = JSON.parse(content);
+    } catch (error) {
+      throw new WalletError(
+        'Invalid backup file: unable to parse JSON',
+        'INVALID_MNEMONIC'
+      );
+    }
+
+    // Validate file format
+    if (backupFile.type !== 'stablecoin-wallet-backup') {
+      throw new WalletError(
+        'Invalid backup file: incorrect file type',
+        'INVALID_MNEMONIC'
+      );
+    }
+
+    if (!backupFile.version || !backupFile.wallet) {
+      throw new WalletError(
+        'Invalid backup file: missing required fields',
+        'INVALID_MNEMONIC'
+      );
+    }
+
+    // Validate wallet data structure
+    const walletData = backupFile.wallet;
+    if (!walletData.encryptedPrivateKey || !walletData.address) {
+      throw new WalletError(
+        'Invalid backup file: corrupted wallet data',
+        'INVALID_MNEMONIC'
+      );
+    }
+
+    // Verify password can decrypt the wallet
+    try {
+      await decrypt(walletData.encryptedPrivateKey, password);
+    } catch (error) {
+      throw new WalletError(
+        'Invalid password for this wallet backup',
+        'DECRYPTION_FAILED'
+      );
+    }
+
+    // Verify private key produces correct address
+    let decryptedPrivateKey: string;
+    try {
+      decryptedPrivateKey = await decrypt(walletData.encryptedPrivateKey, password);
+    } catch (error) {
+      throw new WalletError(
+        'Failed to decrypt wallet data',
+        'DECRYPTION_FAILED'
+      );
+    }
+
+    const wallet = new Wallet(decryptedPrivateKey);
+    if (wallet.address !== walletData.address) {
+      throw new WalletError(
+        'Wallet verification failed: address mismatch',
+        'DECRYPTION_FAILED'
+      );
+    }
+
+    // Import wallet data
+    setWallet(walletData);
+
+    return walletData.address;
+  } catch (error) {
+    if (error instanceof WalletError) {
+      throw error;
+    }
+
+    throw new WalletError(
+      `Failed to import wallet from file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'UNKNOWN'
+    );
+  }
+}

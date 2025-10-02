@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { Alert } from '@/components/ui/Alert';
+import { QRScanner } from '@/components/qr';
 import { getTokensForNetwork, type TokenSymbol } from '@/constants/tokens';
 import { env } from '@/lib/env';
 
@@ -33,11 +34,14 @@ export function SendModal({ isOpen, onClose }: SendModalProps) {
   const [step, setStep] = useState<SendStep>('form');
 
   // Form state
-  const [selectedToken, setSelectedToken] = useState<TokenSymbol>('USDC');
+  const [selectedToken, setSelectedToken] = useState<'USDC' | 'USDT' | 'DAI'>('USDC');
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [password, setPassword] = useState('');
   const [txHash, setTxHash] = useState('');
+
+  // QR Scanner state
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
 
   // Form validation
   const [errors, setErrors] = useState<{
@@ -47,7 +51,7 @@ export function SendModal({ isOpen, onClose }: SendModalProps) {
   }>({});
 
   // Fetch balance for selected token
-  const { data: balance, isLoading: balanceLoading } = useBalance(selectedToken);
+  const { data: balance, isLoading: balanceLoading } = useBalance(selectedToken as 'USDC' | 'USDT' | 'DAI');
 
   // Send transaction mutation
   const {
@@ -132,6 +136,13 @@ export function SendModal({ isOpen, onClose }: SendModalProps) {
     );
   };
 
+  // Handle QR scan result
+  const handleQRScan = (scannedAddress: string) => {
+    setRecipient(scannedAddress);
+    setErrors({ ...errors, recipient: undefined });
+    setIsQRScannerOpen(false);
+  };
+
   // Reset and close
   const handleClose = () => {
     setStep('form');
@@ -140,6 +151,7 @@ export function SendModal({ isOpen, onClose }: SendModalProps) {
     setPassword('');
     setErrors({});
     setTxHash('');
+    setIsQRScannerOpen(false);
     onClose();
   };
 
@@ -155,7 +167,7 @@ export function SendModal({ isOpen, onClose }: SendModalProps) {
           <Dropdown
             options={tokenOptions}
             value={selectedToken}
-            onChange={(e) => setSelectedToken(e.target.value as TokenSymbol)}
+            onChange={(e) => setSelectedToken(e.target.value as 'USDC' | 'USDT' | 'DAI')}
           />
           {balance && (
             <p className="mt-2 text-sm text-gray-400">
@@ -169,15 +181,38 @@ export function SendModal({ isOpen, onClose }: SendModalProps) {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Recipient Address
           </label>
-          <Input
-            value={recipient}
-            onChange={(e) => {
-              setRecipient(e.target.value);
-              setErrors({ ...errors, recipient: undefined });
-            }}
-            placeholder="0x..."
-            error={errors.recipient}
-          />
+          <div className="flex gap-2">
+            <Input
+              value={recipient}
+              onChange={(e) => {
+                setRecipient(e.target.value);
+                setErrors({ ...errors, recipient: undefined });
+              }}
+              placeholder="0x..."
+              error={errors.recipient}
+              className="flex-1"
+            />
+            <Button
+              variant="secondary"
+              onClick={() => setIsQRScannerOpen(true)}
+              className="shrink-0 px-3"
+              title="Scan QR Code"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                />
+              </svg>
+            </Button>
+          </div>
         </div>
 
         {/* Amount */}
@@ -335,27 +370,37 @@ export function SendModal({ isOpen, onClose }: SendModalProps) {
   );
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={step === 'sending' ? () => {} : handleClose}
-      title={
-        step === 'form'
-          ? 'Send Transaction'
-          : step === 'confirm'
-          ? 'Confirm Transaction'
-          : step === 'password'
-          ? 'Enter Password'
-          : ''
-      }
-      closeOnBackdropClick={step !== 'sending'}
-      showCloseButton={step !== 'sending'}
-    >
-      {step === 'form' && renderForm()}
-      {step === 'confirm' && renderConfirm()}
-      {step === 'password' && renderPassword()}
-      {step === 'sending' && renderSending()}
-      {step === 'success' && renderSuccess()}
-      {step === 'error' && renderError()}
-    </Modal>
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={step === 'sending' ? () => {} : handleClose}
+        title={
+          step === 'form'
+            ? 'Send Transaction'
+            : step === 'confirm'
+            ? 'Confirm Transaction'
+            : step === 'password'
+            ? 'Enter Password'
+            : ''
+        }
+        closeOnBackdropClick={step !== 'sending'}
+        showCloseButton={step !== 'sending'}
+      >
+        {step === 'form' && renderForm()}
+        {step === 'confirm' && renderConfirm()}
+        {step === 'password' && renderPassword()}
+        {step === 'sending' && renderSending()}
+        {step === 'success' && renderSuccess()}
+        {step === 'error' && renderError()}
+      </Modal>
+
+      {/* QR Scanner Modal */}
+      <QRScanner
+        isOpen={isQRScannerOpen}
+        onClose={() => setIsQRScannerOpen(false)}
+        onScan={handleQRScan}
+        title="Scan Recipient Address"
+      />
+    </>
   );
 }

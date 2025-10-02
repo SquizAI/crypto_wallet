@@ -27,9 +27,9 @@
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { useWallet } from '@/context/WalletContext';
+import { useNetwork } from '@/hooks/useNetwork';
 import { getTokenBalance, getAllBalances } from '@/services/contractService';
-import { getTokenAddress, type TokenSymbol } from '@/constants/tokens';
-import { env } from '@/lib/env';
+import { getTokenAddress } from '@/config/networks';
 import type { TokenBalance } from '@/types/contract';
 
 /**
@@ -53,6 +53,8 @@ export interface UseBalanceOptions {
    */
   queryOptions?: Partial<UseQueryOptions<TokenBalance | TokenBalance[], Error>>;
 }
+
+type TokenSymbol = 'USDC' | 'USDT' | 'DAI';
 
 /**
  * Fetch single token balance
@@ -88,7 +90,7 @@ export function useBalance(
   optionsParam?: UseBalanceOptions
 ): ReturnType<typeof useQuery<TokenBalance | TokenBalance[], Error>> {
   const { address, isUnlocked } = useWallet();
-  const network = env.NEXT_PUBLIC_NETWORK;
+  const { currentNetwork } = useNetwork();
 
   // Parse parameters
   let tokenSymbol: TokenSymbol | null = null;
@@ -114,10 +116,10 @@ export function useBalance(
   const isSingleToken = tokenSymbol !== null;
 
   return useQuery({
-    // Query key includes address and token for proper cache invalidation
+    // Query key includes address, network, and token for proper cache invalidation
     queryKey: isSingleToken
-      ? ['balance', address, tokenSymbol]
-      : ['balances', address],
+      ? ['balance', address, currentNetwork, tokenSymbol]
+      : ['balances', address, currentNetwork],
 
     // Query function
     queryFn: async () => {
@@ -127,15 +129,15 @@ export function useBalance(
 
       if (isSingleToken) {
         // Fetch single token balance
-        const tokenAddress = getTokenAddress(tokenSymbol as TokenSymbol, network);
+        const tokenAddress = getTokenAddress(currentNetwork, tokenSymbol as TokenSymbol);
         if (!tokenAddress) {
-          throw new Error(`Token ${tokenSymbol} not supported on ${network}`);
+          throw new Error(`Token ${tokenSymbol} not supported on ${currentNetwork}`);
         }
 
-        return await getTokenBalance(tokenAddress, address);
+        return await getTokenBalance(tokenAddress, address, currentNetwork);
       } else {
         // Fetch all token balances
-        return await getAllBalances(address);
+        return await getAllBalances(address, currentNetwork);
       }
     },
 

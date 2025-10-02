@@ -150,11 +150,12 @@ export function useSendTransaction() {
         address,
         recipient,
         amount,
-        tokenConfig.decimals
+        tokenConfig.decimals,
+        network as any // Type will be fixed when network is properly managed
       );
 
       // Check token balance
-      const balance = await getTokenBalance(tokenAddress, address);
+      const balance = await getTokenBalance(tokenAddress, address, network as any);
       const balanceNum = parseFloat(balance.balanceFormatted);
       const amountNum = parseFloat(amount);
 
@@ -170,7 +171,8 @@ export function useSendTransaction() {
         tokenAddress,
         recipient,
         amount,
-        tokenConfig.decimals
+        tokenConfig.decimals,
+        network as any // Type will be fixed when network is properly managed
       );
 
       // Track transaction with monitoring
@@ -308,7 +310,8 @@ export function useEstimateGas(params: Omit<SendTransactionParams, 'password'>) 
         address,
         recipient,
         amount,
-        tokenConfig.decimals
+        tokenConfig.decimals,
+        network as any // Type will be fixed when network is properly managed
       );
     },
   });

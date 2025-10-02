@@ -9,20 +9,24 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
-import { exportPrivateKey, exportMnemonic, deleteWallet, getWalletType } from '@/services';
+import { useTheme } from '@/context/ThemeContext';
+import { exportPrivateKey, exportMnemonic, exportWalletToFile, deleteWallet, getWalletType } from '@/services';
 import { Button } from '@/components/ui/Button';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Alert } from '@/components/ui/Alert';
 import { Modal, ModalFooter } from '@/components/ui/Modal';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { env } from '@/lib/env';
+import { TIMEOUT_OPTIONS, getTimeoutLabel, type TimeoutOption } from '@/hooks/useIdleTimer';
+import { getBackupStatus, getTimeSinceLastBackup } from '@/services/backupService';
 
-type SettingsModal = 'export-key' | 'export-mnemonic' | 'delete-wallet' | null;
+type SettingsModal = 'export-key' | 'export-mnemonic' | 'export-wallet' | 'delete-wallet' | null;
 
 export const dynamic = 'force-dynamic';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { address, lock } = useWallet();
+  const { address, lock, timeoutPreference, setTimeoutPreference } = useWallet();
   const [mounted, setMounted] = useState(false);
 
   const [activeModal, setActiveModal] = useState<SettingsModal>(null);
@@ -30,9 +34,18 @@ export default function SettingsPage() {
   const [exportedData, setExportedData] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [backupStatusText, setBackupStatusText] = useState<string>('Never');
+  const [hasBackedUp, setHasBackedUp] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+
+    // Load backup status
+    const status = getBackupStatus();
+    if (status) {
+      setHasBackedUp(status.hasBackedUp);
+      setBackupStatusText(getTimeSinceLastBackup());
+    }
   }, []);
 
   if (!mounted) {
@@ -79,6 +92,45 @@ export default function SettingsPage() {
       setPassword('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to export recovery phrase');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle export wallet file
+  const handleExportWallet = async () => {
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+
+    setError(null);
+    setIsProcessing(true);
+
+    try {
+      const blob = await exportWalletToFile(password);
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `stablecoin-wallet-backup-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Close modal and show success
+      setPassword('');
+      closeModal();
+
+      // Update backup status
+      setHasBackedUp(true);
+      setBackupStatusText(getTimeSinceLastBackup());
+
+      alert('Wallet backup file downloaded successfully! Keep this file secure.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export wallet');
     } finally {
       setIsProcessing(false);
     }
@@ -137,6 +189,15 @@ export default function SettingsPage() {
           <p className="text-sm sm:text-base text-gray-400">Manage your wallet and security settings</p>
         </div>
 
+        {/* Appearance */}
+        <div className="glass-card rounded-2xl p-4 sm:p-6 border border-white/10">
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Appearance</h2>
+          <p className="text-sm text-gray-400 mb-4">
+            Customize the app appearance
+          </p>
+          <ThemeToggle showLabel />
+        </div>
+
         {/* Wallet Info */}
         <div className="glass-card rounded-2xl p-4 sm:p-6 border border-white/10">
           <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Wallet Information</h2>
@@ -165,11 +226,123 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Session Timeout */}
+        <div className="glass-card rounded-2xl p-4 sm:p-6 border border-white/10">
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Session Timeout</h2>
+          <p className="text-sm text-gray-400 mb-4">
+            Automatically lock wallet after period of inactivity
+          </p>
+
+          <div className="space-y-2">
+            {(Object.keys(TIMEOUT_OPTIONS) as TimeoutOption[]).map((option) => (
+              <button
+                key={option}
+                onClick={() => setTimeoutPreference(option)}
+                className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-all touch-manipulation ${
+                  timeoutPreference === option
+                    ? 'bg-blue-500/20 border-blue-500/50'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10 active:bg-white/15'
+                }`}
+              >
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                    timeoutPreference === option
+                      ? 'border-blue-500'
+                      : 'border-gray-400'
+                  }`}>
+                    {timeoutPreference === option && (
+                      <div className="w-3 h-3 rounded-full bg-blue-500" />
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm sm:text-base text-white font-medium">
+                      {getTimeoutLabel(option)}
+                    </p>
+                    {option !== 'never' && (
+                      <p className="text-xs text-gray-400">
+                        Lock after {getTimeoutLabel(option).toLowerCase()} of inactivity
+                      </p>
+                    )}
+                    {option === 'never' && (
+                      <p className="text-xs text-gray-400">
+                        Wallet will remain unlocked (not recommended)
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {timeoutPreference === option && (
+                  <svg className="w-5 h-5 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {timeoutPreference !== 'never' && (
+            <Alert variant="info" className="mt-4">
+              <div className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm text-gray-300">
+                  You will receive a warning 30 seconds before auto-lock. Any activity resets the timer.
+                </p>
+              </div>
+            </Alert>
+          )}
+        </div>
+
         {/* Security & Backup */}
         <div className="glass-card rounded-2xl p-4 sm:p-6 border border-white/10">
           <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Security & Backup</h2>
 
+          {/* Backup Status Indicator */}
+          <div className="mb-4 p-4 rounded-xl border bg-white/5 border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-400">Backup Status</span>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${hasBackedUp ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                <span className={`text-sm font-semibold ${hasBackedUp ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {hasBackedUp ? 'Backed Up' : 'Not Backed Up'}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">Last Backup</span>
+              <span className="text-sm text-white">{backupStatusText}</span>
+            </div>
+            {!hasBackedUp && (
+              <Alert variant="warning" className="mt-3">
+                <p className="text-xs">
+                  Your wallet has not been backed up. Export a backup file to protect your funds.
+                </p>
+              </Alert>
+            )}
+          </div>
+
           <div className="space-y-2 sm:space-y-3">
+            {/* Export Wallet File */}
+            <button
+              onClick={() => setActiveModal('export-wallet')}
+              className="w-full flex items-center justify-between p-3 sm:p-4 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 transition-all touch-manipulation"
+            >
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm sm:text-base text-white font-medium">Export Wallet Backup</p>
+                  <p className="text-xs sm:text-sm text-gray-400">Download encrypted backup file</p>
+                </div>
+              </div>
+              <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
             {/* Export Private Key */}
             <button
               onClick={() => setActiveModal('export-key')}
@@ -183,7 +356,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="text-left">
                   <p className="text-sm sm:text-base text-white font-medium">Export Private Key</p>
-                  <p className="text-xs sm:text-sm text-gray-400">Download your private key</p>
+                  <p className="text-xs sm:text-sm text-gray-400">View your private key</p>
                 </div>
               </div>
               <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -359,6 +532,53 @@ export default function SettingsPage() {
               </ModalFooter>
             </>
           )}
+        </Modal>
+
+        {/* Export Wallet File Modal */}
+        <Modal
+          isOpen={activeModal === 'export-wallet'}
+          onClose={closeModal}
+          title="Export Wallet Backup"
+        >
+          <Alert variant="warning">
+            This will download an encrypted backup file of your wallet. Keep this file secure and use the same password to restore it later.
+          </Alert>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Enter Password
+            </label>
+            <PasswordInput
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
+              placeholder="Wallet password"
+              autoFocus
+            />
+          </div>
+
+          <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
+            <p className="text-xs text-gray-300">
+              <strong>Backup includes:</strong>
+              <br />
+              - Encrypted private key
+              <br />
+              - Encrypted recovery phrase (if available)
+              <br />
+              - Wallet address and metadata
+            </p>
+          </div>
+
+          {error && <Alert variant="error" className="mt-4">{error}</Alert>}
+
+          <ModalFooter>
+            <Button variant="secondary" onClick={closeModal}>Cancel</Button>
+            <Button onClick={handleExportWallet} loading={isProcessing}>
+              Download Backup
+            </Button>
+          </ModalFooter>
         </Modal>
 
         {/* Delete Wallet Modal */}

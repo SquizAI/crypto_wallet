@@ -11,8 +11,9 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useWallet } from '@/context/WalletContext';
+import { importWalletFromFile } from '@/services/walletService';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
@@ -31,7 +32,7 @@ export interface ImportWalletProps {
   onBack?: () => void;
 }
 
-type ImportMethod = 'mnemonic' | 'privateKey';
+type ImportMethod = 'mnemonic' | 'privateKey' | 'file';
 
 /**
  * Validate mnemonic phrase
@@ -82,6 +83,10 @@ export function ImportWallet({ onSuccess, onBack }: ImportWalletProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePassword, setFilePassword] = useState('');
+  const [isFileImporting, setIsFileImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -140,9 +145,65 @@ export function ImportWallet({ onSuccess, onBack }: ImportWalletProps) {
     [method, mnemonic, privateKey, password, confirmPassword, importWallet, onSuccess, clearError]
   );
 
+  // Handle file selection
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.name.endsWith('.json')) {
+        setValidationError('Please select a valid wallet backup file (.json)');
+        return;
+      }
+
+      setSelectedFile(file);
+      setValidationError('');
+    }
+  }, []);
+
+  // Handle file import
+  const handleFileImport = useCallback(async () => {
+    if (!selectedFile) {
+      setValidationError('Please select a backup file');
+      return;
+    }
+
+    if (!filePassword) {
+      setValidationError('Password is required');
+      return;
+    }
+
+    if (filePassword.length < 8) {
+      setValidationError('Password must be at least 8 characters');
+      return;
+    }
+
+    setValidationError('');
+    setIsFileImporting(true);
+
+    try {
+      const address = await importWalletFromFile(selectedFile, filePassword);
+
+      // Clear sensitive data
+      setSelectedFile(null);
+      setFilePassword('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      // Show success and redirect
+      alert(`Wallet imported successfully!\nAddress: ${address}`);
+      onSuccess();
+    } catch (err) {
+      setValidationError(err instanceof Error ? err.message : 'Failed to import wallet from file');
+    } finally {
+      setIsFileImporting(false);
+    }
+  }, [selectedFile, filePassword, onSuccess]);
+
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
   const hasInput = method === 'mnemonic' ? mnemonic.trim() : privateKey.trim();
   const canSubmit = hasInput && password.length >= 8 && passwordsMatch && !isLoading;
+  const canImportFile = selectedFile && filePassword.length >= 8 && !isFileImporting;
 
   return (
     <Card variant="elevated" className="max-w-md mx-auto">
@@ -163,14 +224,25 @@ export function ImportWallet({ onSuccess, onBack }: ImportWalletProps) {
           )}
 
           {/* Method Tabs */}
-          <div className="flex gap-2 border-b border-gray-200">
+          <div className="flex gap-2 border-b border-white/20">
+            <button
+              type="button"
+              onClick={() => setMethod('file')}
+              className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px ${
+                method === 'file'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              Backup File
+            </button>
             <button
               type="button"
               onClick={() => setMethod('mnemonic')}
               className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px ${
                 method === 'mnemonic'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
             >
               Recovery Phrase
@@ -180,13 +252,109 @@ export function ImportWallet({ onSuccess, onBack }: ImportWalletProps) {
               onClick={() => setMethod('privateKey')}
               className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px ${
                 method === 'privateKey'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
             >
               Private Key
             </button>
           </div>
+
+          {/* File Import */}
+          {method === 'file' && (
+            <>
+              <div>
+                <label
+                  htmlFor="backup-file"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Wallet Backup File
+                </label>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      id="backup-file"
+                      accept=".json"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full px-4 py-3 border border-white/20 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-left flex items-center gap-3"
+                    >
+                      <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <div className="flex-1">
+                        {selectedFile ? (
+                          <div>
+                            <p className="text-sm font-medium text-white">{selectedFile.name}</p>
+                            <p className="text-xs text-gray-400">{(selectedFile.size / 1024).toFixed(2)} KB</p>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-400">Choose wallet backup file...</p>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+
+                  {selectedFile && (
+                    <div className="space-y-3">
+                      <PasswordInput
+                        label="Wallet Password"
+                        value={filePassword}
+                        onChange={(e) => {
+                          setFilePassword(e.target.value);
+                          setValidationError('');
+                        }}
+                        placeholder="Enter the password for this wallet"
+                        disabled={isFileImporting}
+                        autoComplete="current-password"
+                      />
+
+                      <Alert variant="info">
+                        Enter the password that was used to create this wallet backup.
+                      </Alert>
+
+                      <Button
+                        type="button"
+                        variant="primary"
+                        fullWidth
+                        onClick={handleFileImport}
+                        disabled={!canImportFile}
+                        loading={isFileImporting}
+                      >
+                        Import from File
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <p className="mt-2 text-xs text-gray-400">
+                  Select a wallet backup file (.json) exported from this app
+                </p>
+              </div>
+
+              <Alert variant="info">
+                Import a wallet from a previously exported backup file. You'll need the password that was used when the wallet was created.
+              </Alert>
+
+              {onBack && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  onClick={onBack}
+                  disabled={isFileImporting}
+                >
+                  Back
+                </Button>
+              )}
+            </>
+          )}
 
           {/* Mnemonic Input */}
           {method === 'mnemonic' && (

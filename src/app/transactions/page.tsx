@@ -9,9 +9,11 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
+import { useWallet } from '@/context/WalletContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { Badge } from '@/components/ui/Badge';
+import { downloadCSV, downloadPDF } from '@/utils/exportTransactions';
 import type { TransactionStatus, TransactionType } from '@/types/wallet';
 
 export const dynamic = 'force-dynamic';
@@ -19,9 +21,12 @@ export const dynamic = 'force-dynamic';
 function TransactionsContent() {
   const searchParams = useSearchParams();
   const highlightHash = searchParams.get('hash');
+  const { address } = useWallet();
 
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Fetch transactions with filters
   const { data: transactions, isLoading } = useTransactionHistory({
@@ -98,13 +103,161 @@ function TransactionsContent() {
     return date.toLocaleDateString();
   };
 
+  // Handle CSV export
+  const handleExportCSV = async () => {
+    if (!transactions || transactions.length === 0) return;
+
+    setIsExporting(true);
+    setIsExportMenuOpen(false);
+
+    try {
+      downloadCSV(transactions);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+      alert('Failed to export CSV. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Handle PDF export
+  const handleExportPDF = async () => {
+    if (!transactions || transactions.length === 0 || !address) return;
+
+    setIsExporting(true);
+    setIsExportMenuOpen(false);
+
+    try {
+      downloadPDF(transactions, address);
+    } catch (error) {
+      console.error('Failed to export PDF:', error);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Transaction History</h1>
-          <p className="text-sm sm:text-base text-gray-400">View and filter all your transactions</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Transaction History</h1>
+            <p className="text-sm sm:text-base text-gray-400">View and filter all your transactions</p>
+          </div>
+
+          {/* Export Button */}
+          {transactions && transactions.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                disabled={isExporting}
+                className="
+                  px-4 py-2 sm:px-6 sm:py-3
+                  bg-blue-600 hover:bg-blue-700 active:bg-blue-800
+                  text-white text-sm sm:text-base font-medium
+                  rounded-lg transition-colors duration-200
+                  flex items-center gap-2 sm:gap-3
+                  touch-manipulation
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  min-w-[140px] justify-center
+                "
+                aria-label="Export transactions"
+                aria-expanded={isExportMenuOpen}
+                aria-haspopup="true"
+              >
+                {isExporting ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Export</span>
+                    <svg className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </>
+                )}
+              </button>
+
+              {/* Export Dropdown Menu */}
+              {isExportMenuOpen && !isExporting && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsExportMenuOpen(false)}
+                    aria-hidden="true"
+                  />
+
+                  {/* Menu */}
+                  <div
+                    className="
+                      absolute right-0 mt-2 w-48 sm:w-56
+                      glass-card rounded-xl border border-white/10
+                      shadow-xl
+                      z-20
+                      overflow-hidden
+                    "
+                    role="menu"
+                    aria-orientation="vertical"
+                  >
+                    <button
+                      onClick={handleExportCSV}
+                      className="
+                        w-full px-4 py-3
+                        flex items-center gap-3
+                        text-left text-sm sm:text-base text-white
+                        hover:bg-white/10 active:bg-white/20
+                        transition-colors duration-200
+                        touch-manipulation
+                      "
+                      role="menuitem"
+                    >
+                      <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <div>
+                        <div className="font-medium">Export as CSV</div>
+                        <div className="text-xs text-gray-400">For spreadsheets</div>
+                      </div>
+                    </button>
+
+                    <div className="h-px bg-white/10" />
+
+                    <button
+                      onClick={handleExportPDF}
+                      className="
+                        w-full px-4 py-3
+                        flex items-center gap-3
+                        text-left text-sm sm:text-base text-white
+                        hover:bg-white/10 active:bg-white/20
+                        transition-colors duration-200
+                        touch-manipulation
+                      "
+                      role="menuitem"
+                    >
+                      <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <div>
+                        <div className="font-medium">Export as PDF</div>
+                        <div className="text-xs text-gray-400">For printing</div>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Filters */}

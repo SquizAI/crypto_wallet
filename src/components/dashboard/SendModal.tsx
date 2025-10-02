@@ -16,6 +16,7 @@ import { useBalance } from '@/hooks/useBalance';
 import { useWallet } from '@/context/WalletContext';
 import { getAllTokenSymbols, type TokenSymbol } from '@/constants/tokens';
 import { formatAmount, isValidAddress } from '@/lib/utils';
+import { AddressBookSelector } from '@/components/address-book/AddressBookSelector';
 
 export interface SendModalProps {
   /**
@@ -59,6 +60,7 @@ export function SendModal({ isOpen, onClose, defaultToken = 'USDC' }: SendModalP
   const { address } = useWallet();
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isAddressBookOpen, setIsAddressBookOpen] = useState(false);
 
   const {
     register,
@@ -82,7 +84,7 @@ export function SendModal({ isOpen, onClose, defaultToken = 'USDC' }: SendModalP
   const recipient = watch('recipient');
 
   // Fetch balance for selected token
-  const { data: balance } = useBalance((selectedToken || 'USDC') as TokenSymbol);
+  const { data: balance } = useBalance((selectedToken || 'USDC') as 'USDC' | 'USDT' | 'DAI');
 
   // Send transaction mutation
   const { mutate: sendToken, isPending, error: sendError } = useSendTransaction();
@@ -127,6 +129,12 @@ export function SendModal({ isOpen, onClose, defaultToken = 'USDC' }: SendModalP
     if (balance) {
       setValue('amount', balance.balanceFormatted);
     }
+  };
+
+  // Handle address book selection
+  const handleAddressBookSelect = (selectedAddress: string, label: string) => {
+    setValue('recipient', selectedAddress);
+    setIsAddressBookOpen(false);
   };
 
   // Handle close
@@ -225,13 +233,40 @@ export function SendModal({ isOpen, onClose, defaultToken = 'USDC' }: SendModalP
         )}
 
         {/* Recipient Address */}
-        <Input
-          label="Recipient Address"
-          placeholder="0x..."
-          {...register('recipient')}
-          error={errors.recipient?.message}
-          fullWidth
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Recipient Address
+          </label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="0x..."
+              {...register('recipient')}
+              error={errors.recipient?.message}
+              fullWidth
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={() => setIsAddressBookOpen(true)}
+              title="Select from Address Book"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+            </Button>
+          </div>
+        </div>
 
         {/* Amount */}
         <div>
@@ -305,6 +340,14 @@ export function SendModal({ isOpen, onClose, defaultToken = 'USDC' }: SendModalP
           </Button>
         </ModalFooter>
       </form>
+
+      {/* Address Book Selector */}
+      <AddressBookSelector
+        isOpen={isAddressBookOpen}
+        onClose={() => setIsAddressBookOpen(false)}
+        onSelect={handleAddressBookSelect}
+        network="sepolia"
+      />
     </Modal>
   );
 }

@@ -31,3 +31,19 @@ export {
   useTransaction,
   type UseTransactionHistoryOptions,
 } from './useTransactionHistory';
+
+// Idle timer hooks
+export {
+  useIdleTimer,
+  loadTimeoutPreference,
+  saveTimeoutPreference,
+  getTimeoutLabel,
+  TIMEOUT_OPTIONS,
+  type UseIdleTimerOptions,
+  type TimeoutOption,
+} from './useIdleTimer';
+
+// Backup reminder hooks
+export {
+  useBackupReminder,
+} from './useBackupReminder';

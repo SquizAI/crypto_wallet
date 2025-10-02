@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
-:root {
+/* ============================================
+   THEME VARIABLES
+   ============================================ */
+
+/* Dark Theme (Default) */
+:root,
+:root.dark {
   --background: #0d1117;
   --foreground: #F8FAFC;
+  --surface: #161b22;
+  --surface-elevated: #1f2937;
 
   /* Ultra-modern color palette */
   --charcoal-deep: #0d1117;
@@ -11,6 +19,73 @@
   --emerald-green: #10b981;
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.1);
+
+  /* Text colors */
+  --text-primary: #F8FAFC;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+
+  /* Border colors */
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.05);
+
+  /* Interactive states */
+  --hover-overlay: rgba(255, 255, 255, 0.05);
+  --active-overlay: rgba(255, 255, 255, 0.1);
+
+  /* Grid pattern */
+  --grid-color: rgba(255, 255, 255, 0.02);
+
+  /* Scrollbar */
+  --scrollbar-track: rgba(255, 255, 255, 0.03);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+}
+
+/* Light Theme */
+:root.light {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --surface: #f8fafc;
+  --surface-elevated: #f1f5f9;
+
+  /* Ultra-modern color palette (adjusted for light) */
+  --charcoal-deep: #f8fafc;
+  --charcoal-medium: #f1f5f9;
+  --electric-blue: #3b82f6;
+  --emerald-green: #10b981;
+  --glass-bg: rgba(15, 23, 42, 0.03);
+  --glass-border: rgba(15, 23, 42, 0.1);
+
+  /* Text colors */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+
+  /* Border colors */
+  --border-primary: rgba(15, 23, 42, 0.1);
+  --border-secondary: rgba(15, 23, 42, 0.05);
+
+  /* Interactive states */
+  --hover-overlay: rgba(15, 23, 42, 0.05);
+  --active-overlay: rgba(15, 23, 42, 0.1);
+
+  /* Grid pattern */
+  --grid-color: rgba(15, 23, 42, 0.02);
+
+  /* Scrollbar */
+  --scrollbar-track: rgba(15, 23, 42, 0.03);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.15);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.25);
+}
+
+/* Smooth theme transition */
+:root {
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+:root * {
+  transition: background-color 300ms ease, border-color 300ms ease, color 300ms ease;
 }
 
 @theme inline {
@@ -38,8 +113,8 @@ body::before {
   width: 100%;
   height: 100%;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
   background-size: 50px 50px;
   pointer-events: none;
   z-index: 0;
@@ -51,32 +126,44 @@ body::before {
 
 /* Glass Effects - Ultra-modern frosted glass */
 .glass {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--glass-border);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid var(--border-primary);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
   transition: all 300ms ease;
+}
+
+.dark .glass-card {
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .glass-card:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--hover-overlay);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.25);
+}
+
+.dark .glass-card:hover {
   box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
 }
 
 .glass-strong {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--glass-border);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--border-primary);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+}
+
+.dark .glass-strong {
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
@@ -435,19 +522,19 @@ body::before {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--scrollbar-track);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar-thumb);
   border-radius: 10px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--scrollbar-thumb-hover);
   background-clip: padding-box;
 }
 
@@ -461,12 +548,12 @@ body::before {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scrollbar-thumb);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Text Gradient */

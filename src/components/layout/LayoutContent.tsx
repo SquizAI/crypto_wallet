@@ -11,6 +11,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { Sidebar } from './Sidebar';
+import { LockWarningBanner } from './LockWarningBanner';
+import { BackupReminderWrapper } from '@/components/backup/BackupReminderWrapper';
+import { NotificationCenter } from '@/components/alerts/NotificationCenter';
 
 const AUTH_ROUTES = ['/onboarding', '/unlock', '/create-wallet', '/import-wallet'];
 
@@ -54,12 +57,27 @@ export function LayoutContent({ children }: LayoutContentProps) {
 
   if (showSidebar) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <main className="flex-1 min-h-screen">{children}</main>
-      </div>
+      <>
+        <LockWarningBanner />
+        <BackupReminderWrapper />
+        <div className="flex min-h-screen">
+          <Sidebar />
+          <main className="flex-1 min-h-screen relative">
+            {/* Notification Center - Fixed position in top right */}
+            <div className="fixed top-4 right-4 z-40">
+              <NotificationCenter />
+            </div>
+            {children}
+          </main>
+        </div>
+      </>
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <BackupReminderWrapper />
+      {children}
+    </>
+  );
 }

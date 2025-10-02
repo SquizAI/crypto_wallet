@@ -34,6 +34,8 @@ export {
   verifyPassword,
   exportPrivateKey,
   exportMnemonic,
+  exportWalletToFile,
+  importWalletFromFile,
   WalletError,
 } from './walletService';
 

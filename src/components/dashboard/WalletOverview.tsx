@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { useBalance } from '@/hooks/useBalance';
 import { useWallet } from '@/context/WalletContext';
+import { useNetwork } from '@/hooks/useNetwork';
 import { BalanceCard } from './BalanceCard';
 import { SendModal } from './SendModal';
 import { ReceiveModal } from './ReceiveModal';
@@ -17,6 +18,7 @@ import { Button, Alert } from '@/components/ui';
 import { formatAmount } from '@/lib/utils';
 import { getAllTokenSymbols, type TokenSymbol } from '@/constants/tokens';
 import { BalanceCardSkeleton } from '@/components/ui/Skeleton';
+import { NetworkIndicator } from '@/components/network/NetworkSwitcher';
 
 export interface WalletOverviewProps {
   /**
@@ -30,6 +32,7 @@ export interface WalletOverviewProps {
  */
 export function WalletOverview({ className = '' }: WalletOverviewProps) {
   const { isUnlocked } = useWallet();
+  const { networkConfig } = useNetwork();
   const [selectedToken, setSelectedToken] = useState<TokenSymbol | null>(null);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -93,7 +96,7 @@ export function WalletOverview({ className = '' }: WalletOverviewProps) {
     <div className={className}>
       {/* Portfolio Header */}
       <div className="mb-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-medium text-gray-600 mb-1">
               Total Portfolio Value
@@ -105,6 +108,18 @@ export function WalletOverview({ className = '' }: WalletOverviewProps) {
                 ${formatAmount(totalValue, 2)}
               </p>
             )}
+          </div>
+          <NetworkIndicator />
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+            style={{
+              backgroundColor: `${networkConfig.color}15`,
+              color: networkConfig.color,
+            }}
+          >
+            Network: {networkConfig.name}
           </div>
           <Button
             variant="ghost"

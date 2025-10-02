@@ -10,6 +10,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
+import { useNotifications } from '@/context/NotificationContext';
+import { CompactThemeToggle } from '@/components/ui/ThemeToggle';
+import { NotificationCenter } from '@/components/alerts/NotificationCenter';
+import { WalletSwitcher } from '@/components/wallet/WalletSwitcher';
+import { NetworkSwitcher } from '@/components/network/NetworkSwitcher';
 import { useState } from 'react';
 
 interface NavItem {
@@ -51,11 +56,61 @@ const navItems: NavItem[] = [
     requiresUnlock: true,
   },
   {
+    href: '/swap',
+    label: 'Swap',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    ),
+    requiresUnlock: true,
+  },
+  {
     href: '/transactions',
     label: 'Transactions',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+    ),
+    requiresUnlock: true,
+  },
+  {
+    href: '/address-book',
+    label: 'Address Book',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+    requiresUnlock: true,
+  },
+  {
+    href: '/analytics',
+    label: 'Analytics',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    requiresUnlock: true,
+  },
+  {
+    href: '/alerts',
+    label: 'Price Alerts',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      </svg>
+    ),
+    requiresUnlock: true,
+  },
+  {
+    href: '/wallets',
+    label: 'Wallets',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
       </svg>
     ),
     requiresUnlock: true,
@@ -76,6 +131,7 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { isUnlocked, lock, address } = useWallet();
+  const { unreadCount } = useNotifications();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLockWallet = () => {
@@ -144,15 +200,26 @@ export function Sidebar() {
               </button>
             </div>
 
-            {/* Wallet Address */}
-            {address && (
-              <div className="mt-3 sm:mt-4 px-2 sm:px-3 py-2 rounded-lg bg-white/5 border border-white/10">
-                <p className="text-xs text-gray-400 mb-1">Wallet Address</p>
-                <p className="text-xs sm:text-sm font-mono text-white truncate">
-                  {address.slice(0, 6)}...{address.slice(-4)}
-                </p>
-              </div>
-            )}
+            {/* Wallet Switcher or Wallet Address */}
+            <div className="mt-3 sm:mt-4 space-y-2">
+              <WalletSwitcher />
+              {/* Show simple address if not multi-wallet mode */}
+              {address && !WalletSwitcher && (
+                <div className="px-2 sm:px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-xs text-gray-400 mb-1">Wallet Address</p>
+                  <p className="text-xs sm:text-sm font-mono text-white truncate">
+                    {address.slice(0, 6)}...{address.slice(-4)}
+                  </p>
+                </div>
+              )}
+
+              {/* Network Switcher */}
+              {isUnlocked && (
+                <div className="pt-2">
+                  <NetworkSwitcher />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Navigation */}
@@ -192,14 +259,23 @@ export function Sidebar() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   )}
+                  {item.href === '/alerts' && unreadCount > 0 && !isDisabled && (
+                    <span className="ml-auto w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Lock Wallet Button */}
-          {isUnlocked && (
-            <div className="p-3 sm:p-4 border-t border-white/10 shrink-0">
+          {/* Footer Actions */}
+          <div className="p-3 sm:p-4 border-t border-white/10 shrink-0 space-y-2">
+            {/* Theme Toggle */}
+            <CompactThemeToggle className="w-full justify-center" />
+
+            {/* Lock Wallet Button */}
+            {isUnlocked && (
               <button
                 onClick={handleLockWallet}
                 className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 active:bg-red-500/20 transition-all duration-300 touch-manipulation"
@@ -209,8 +285,8 @@ export function Sidebar() {
                 </svg>
                 <span className="text-sm sm:text-base font-medium">Lock Wallet</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </aside>
 
