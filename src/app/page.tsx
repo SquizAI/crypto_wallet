@@ -1,103 +1,146 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useWallet } from '@/context/WalletContext';
+import { useBalance } from '@/hooks/useBalance';
+import { useTransactionHistory } from '@/hooks/useTransactionHistory';
+import { PortfolioValue } from '@/components/dashboard/PortfolioValue';
+import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
+import { AssetsCard } from '@/components/dashboard/AssetsCard';
+import { TransactionsCard } from '@/components/dashboard/TransactionsCard';
+import { SendModal } from '@/components/modals/SendModal';
+import { ReceiveModal } from '@/components/modals/ReceiveModal';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { TOKENS } from '@/constants/tokens';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const router = useRouter();
+  const { address, isUnlocked } = useWallet();
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Fetch all token balances
+  const { data: balances, isLoading: balancesLoading } = useBalance();
+
+  // Fetch recent transactions (limit to 5)
+  const { data: transactions, isLoading: transactionsLoading } = useTransactionHistory({
+    limit: 5,
+  });
+
+  // Redirect if not unlocked (handled by LayoutContent, but extra safety)
+  if (!isUnlocked || !address) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl text-white mb-4">Wallet Locked</h2>
+          <p className="text-gray-400">Please unlock your wallet to continue</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Transform balances for AssetsCard
+  const assets = balances
+    ? balances.map((balance) => ({
+        symbol: balance.symbol,
+        name: TOKENS[balance.symbol]?.name || balance.symbol,
+        balance: balance.balanceFormatted,
+        usdValue: balance.balanceFormatted, // Stablecoins are ~$1
+        icon: '',
+      }))
+    : [];
+
+  // Calculate total value
+  const totalValue = balances
+    ? balances.reduce((sum, balance) => sum + parseFloat(balance.balanceFormatted), 0)
+    : 0;
+
+  // Transform transactions for TransactionsCard
+  const recentTransactions = transactions
+    ? transactions.map((tx) => ({
+        id: tx.hash,
+        type: tx.status === 'pending' ? ('pending' as const) : (tx.type as 'send' | 'receive'),
+        amount: tx.value,
+        token: tx.tokenSymbol,
+        timestamp: tx.timestamp ? formatTimestamp(tx.timestamp) : 'Pending',
+        address: tx.type === 'send' ? tx.to || '' : tx.from,
+      }))
+    : [];
+
+  return (
+    <div className="min-h-screen relative">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
+        {/* Two Column Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Column (2/3 width) */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Portfolio Value */}
+            {balancesLoading ? (
+              <Skeleton className="h-64" />
+            ) : (
+              <PortfolioValue
+                totalValue={totalValue}
+                change24h={0} // Stablecoins don't change much
+                onSendClick={() => setShowSendModal(true)}
+                onReceiveClick={() => setShowReceiveModal(true)}
+              />
+            )}
+
+            {/* Performance Chart */}
+            <PerformanceChart />
+          </div>
+
+          {/* Secondary Column (1/3 width) */}
+          <div className="space-y-6">
+            {/* Assets */}
+            {balancesLoading ? (
+              <Skeleton className="h-64" />
+            ) : (
+              <AssetsCard
+                assets={assets}
+                onTokenClick={(symbol) => router.push(`/token/${symbol}`)}
+              />
+            )}
+
+            {/* Recent Transactions */}
+            {transactionsLoading ? (
+              <Skeleton className="h-96" />
+            ) : (
+              <TransactionsCard
+                transactions={recentTransactions}
+                onTransactionClick={(hash) => router.push(`/transactions?hash=${hash}`)}
+              />
+            )}
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      {/* Modals */}
+      <SendModal isOpen={showSendModal} onClose={() => setShowSendModal(false)} />
+      <ReceiveModal isOpen={showReceiveModal} onClose={() => setShowReceiveModal(false)} />
     </div>
   );
+}
+
+/**
+ * Format timestamp to relative time
+ */
+function formatTimestamp(timestamp: string | number | null): string {
+  if (!timestamp) return 'Unknown';
+
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+  return date.toLocaleDateString();
 }
