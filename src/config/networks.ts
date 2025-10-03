@@ -16,7 +16,7 @@ export const NETWORKS: Record<NetworkId, Network> = {
     chainId: ChainId.ETHEREUM,
     name: 'Ethereum',
     shortName: 'ETH',
-    rpcUrl: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL || 'https://eth.llamarpc.com',
+    rpcUrl: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL || 'https://ethereum.drpc.org',
     nativeCurrency: {
       name: 'Ether',
       symbol: 'ETH',
@@ -124,7 +124,7 @@ export const NETWORKS: Record<NetworkId, Network> = {
     chainId: ChainId.BASE,
     name: 'Base',
     shortName: 'BASE',
-    rpcUrl: process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org',
+    rpcUrl: process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://base.drpc.org',
     nativeCurrency: {
       name: 'Ether',
       symbol: 'ETH',
